@@ -8,11 +8,18 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/app"
 	"fyne.io/fyne/canvas"
-	//	"fyne.io/fyne/cmd/fyne_demo/screens"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 )
+
+var db *Db
+
+type App struct {
+	app    fyne.App
+	db     *Db
+	window fyne.Window
+}
 
 func welcomeScreen(a fyne.App) fyne.CanvasObject {
 	logo := canvas.NewImageFromResource(theme.FyneLogo())
@@ -44,14 +51,18 @@ func welcomeScreen(a fyne.App) fyne.CanvasObject {
 }
 
 func main() {
-	_, err := NewDb("./stratos_backup.sqlite")
-	if err != nil {
-		log.Fatal(err.Error)
-	}
+	var err error
+	var application App
 
-	a := app.New()
-	w := a.NewWindow("Stratosphere - free software for your watch")
-	w.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File",
+	application.db, err = NewDb("fixtures/test.sqlite3")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer application.db.connection.Close()
+
+	application.app = app.New()
+	application.window = application.app.NewWindow("Stratosphere - free software for your watch")
+	application.window.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File",
 		fyne.NewMenuItem("New", func() { fmt.Println("Menu New") }),
 		// a quit item will be appended to our first menu
 	), fyne.NewMenu("Edit",
@@ -60,16 +71,16 @@ func main() {
 		fyne.NewMenuItem("Paste", func() { fmt.Println("Menu Paste") }),
 	)))
 
-	/*
-		tabs := widget.NewTabContainer(
-			widget.NewTabItemWithIcon("Welcome", theme.HomeIcon(), welcomeScreen(a)),
-			widget.NewTabItemWithIcon("Widgets", theme.ContentCopyIcon(), screens.WidgetScreen()),
-			widget.NewTabItemWithIcon("Graphics", theme.DocumentCreateIcon(), screens.GraphicsScreen()),
-			widget.NewTabItemWithIcon("Windows", theme.ViewFullScreenIcon(), screens.DialogScreen(w)),
-			widget.NewTabItemWithIcon("Advanced", theme.SettingsIcon(), screens.AdvancedScreen(w)))
-		tabs.SetTabLocation(widget.TabLocationLeading)
-		w.SetContent(tabs)
-	*/
+	tabs := widget.NewTabContainer(
+		//widget.NewTabItemWithIcon("Welcome", theme.HomeIcon(), welcomeScreen(a)),
+		widget.NewTabItemWithIcon("Activities", theme.ContentCopyIcon(), ActivitiesScreen(application)),
+		widget.NewTabItemWithIcon("Widgets", theme.ContentCopyIcon(), WidgetScreen()),
+		widget.NewTabItemWithIcon("Graphics", theme.DocumentCreateIcon(), GraphicsScreen()),
+		widget.NewTabItemWithIcon("Windows", theme.ViewFullScreenIcon(), DialogScreen(application.window)),
+		widget.NewTabItemWithIcon("Advanced", theme.SettingsIcon(), AdvancedScreen(application.window)),
+	)
+	tabs.SetTabLocation(widget.TabLocationLeading)
+	application.window.SetContent(tabs)
 
-	w.ShowAndRun()
+	application.window.ShowAndRun()
 }

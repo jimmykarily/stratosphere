@@ -2,9 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
+	"errors"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
+	"os"
+	"reflect"
 )
 
 type Db struct {
@@ -14,39 +15,76 @@ type Db struct {
 
 // Connects to the sqlite database in "path"/
 func NewDb(path string) (*Db, error) {
-	db := Db{}
 	var err error
+
+	if !fileExists(path) {
+		return nil, errors.New("Database file doesn't exist: " + path)
+	}
+
+	db := Db{}
 	db.connection, err = sql.Open("sqlite3", path)
-	db.Path = path
 	if err != nil {
 		return nil, err
 	}
 
+	db.Path = path
+
 	return &db, nil
 }
 
-func (db *Db) test() {
-	defer db.connection.Close()
+// Returns all activities from database as Activity objects
+func (db *Db) Activities() ([]*Activity, error) {
+	activities := []*Activity{}
 
-	sqlStmt := `
-	SELECT content FROM sport_summary ORDER BY start_time DESC;
-	`
+	query := "SELECT * FROM sport_summary ORDER BY start_time DESC;"
 
-	rows, err := db.connection.Query(sqlStmt)
+	rows, err := db.connection.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		return activities, err
 	}
 	defer rows.Close()
+
 	for rows.Next() {
-		var content string
-		err = rows.Scan(&content)
+		activity := &Activity{}
+
+		//err = rows.Scan(StructForScan(&activity)...)
+		err = rows.Scan(&activity.Id, &activity.Type, &activity.Parent,
+			&activity.StartTime, &activity.EndTime, &activity.Calories,
+			&activity.CurrentStatus, &activity.ContentJSON)
 		if err != nil {
-			log.Fatal(err)
+			return activities, err
 		}
-		fmt.Println(content)
+
+		activity.ParseContent()
+
+		activities = append(activities, activity)
 	}
+
 	err = rows.Err()
 	if err != nil {
-		log.Fatal(err)
+		return activities, err
 	}
+
+	return activities, nil
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// https://stackoverflow.com/a/29185381
+// TODO: Consider using sqlx library
+// https://github.com/jmoiron/sqlx
+func StructForScan(u interface{}) []interface{} {
+	val := reflect.ValueOf(u).Elem()
+	v := make([]interface{}, val.NumField())
+	for i := 0; i < val.NumField(); i++ {
+		valueField := val.Field(i)
+		v[i] = valueField.Addr().Interface()
+	}
+	return v
 }
