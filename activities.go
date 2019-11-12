@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/dialog"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/widget"
@@ -12,6 +13,12 @@ import (
 func activityDetails(activity *Activity) *widget.Group {
 	generic := widget.NewGroupWithScroller("Values")
 	generic.Prepend(widget.NewLabel("Activity Id: " + strconv.Itoa(activity.Id)))
+	// TODO: generate image only when user clicks on activity. we don't want to make loading slow
+	// Consider caching images
+	activity.GenerateMap()
+	mapImg := canvas.NewImageFromImage(activity.Image)
+	mapImg.SetMinSize(fyne.NewSize(1000, 1000))
+	generic.Prepend(widget.NewHBox(layout.NewSpacer(), mapImg, layout.NewSpacer()))
 
 	return generic
 }

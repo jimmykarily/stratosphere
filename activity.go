@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"image"
 	"time"
+
+	maps "github.com/flopp/go-staticmaps"
 )
 
 type Activity struct {
@@ -14,7 +17,9 @@ type Activity struct {
 	Calories      float64
 	CurrentStatus int
 	ContentJSON   string
+	PointsData    string
 	Content       *Content
+	Image         image.Image
 }
 
 type Content struct {
@@ -90,6 +95,24 @@ type Content struct {
 
 func (a *Activity) ParseContent() {
 	json.Unmarshal([]byte(a.ContentJSON), &(a.Content))
+}
+
+func (a *Activity) GenerateMap() {
+	ctx := maps.NewContext()
+	ctx.SetSize(1000, 1000)
+	paths, err := maps.ParsePathString(a.PointsData)
+	if err != nil {
+		panic("Couldn't parse path for activity: " + err.Error())
+	}
+	path := paths[0]
+	path.Weight = 1.0
+
+	ctx.AddPath(path)
+	img, err := ctx.Render()
+	if err != nil {
+		panic(err)
+	}
+	a.Image = img
 }
 
 func (c *Content) StartTimeStr() string {
