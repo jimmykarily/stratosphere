@@ -8,6 +8,11 @@ import (
 	maps "github.com/flopp/go-staticmaps"
 )
 
+const (
+	MapWidth  = 200
+	MapHeight = 200
+)
+
 type Activity struct {
 	Id            int
 	Type          int
@@ -99,7 +104,7 @@ func (a *Activity) ParseContent() {
 
 func (a *Activity) GenerateMap() {
 	ctx := maps.NewContext()
-	ctx.SetSize(1000, 1000)
+	ctx.SetSize(MapWidth, MapHeight)
 	paths, err := maps.ParsePathString(a.PointsData)
 	if err != nil {
 		panic("Couldn't parse path for activity: " + err.Error())

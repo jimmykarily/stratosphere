@@ -17,7 +17,7 @@ func activityDetails(activity *Activity) *widget.Group {
 	// Consider caching images
 	activity.GenerateMap()
 	mapImg := canvas.NewImageFromImage(activity.Image)
-	mapImg.SetMinSize(fyne.NewSize(1000, 1000))
+	mapImg.SetMinSize(fyne.NewSize(MapWidth, MapHeight))
 	generic.Prepend(widget.NewHBox(layout.NewSpacer(), mapImg, layout.NewSpacer()))
 
 	return generic
